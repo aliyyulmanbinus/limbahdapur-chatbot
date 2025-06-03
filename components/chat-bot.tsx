@@ -4,7 +4,22 @@ import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { MessageCircle, X, Send, Bot, User, Leaf, ChefHat, Recycle, Lightbulb } from "lucide-react"
+import {
+  MessageCircle,
+  X,
+  Send,
+  Bot,
+  User,
+  Leaf,
+  ChefHat,
+  Recycle,
+  Lightbulb,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  AlertCircle,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -32,8 +47,19 @@ export default function ChatBot({ isOpen, onClose }: ChatBotProps) {
   ])
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
   const [showTopicButtons, setShowTopicButtons] = useState<string | null>(null)
+
+  // Voice features state
+  const [isListening, setIsListening] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [speechSupported, setSpeechSupported] = useState(false)
+  const [voiceEnabled, setVoiceEnabled] = useState(true)
+  const [voiceError, setVoiceError] = useState<string | null>(null)
+  const [listeningTimeout, setListeningTimeout] = useState<NodeJS.Timeout | null>(null)
+
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const recognitionRef = useRef<any>(null)
+  const synthRef = useRef<SpeechSynthesis | null>(null)
 
   const quickActions = [
     { icon: <ChefHat className="w-4 h-4" />, text: "Resep dari sisa makanan", action: "recipe" },
@@ -42,6 +68,111 @@ export default function ChatBot({ isOpen, onClose }: ChatBotProps) {
     { icon: <Leaf className="w-4 h-4" />, text: "Penyimpanan makanan", action: "storage" },
   ]
 
+  // Initialize speech recognition and synthesis
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Check for speech recognition support
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+      if (SpeechRecognition) {
+        setSpeechSupported(true)
+        recognitionRef.current = new SpeechRecognition()
+        recognitionRef.current.continuous = false
+        recognitionRef.current.interimResults = false
+        recognitionRef.current.lang = "id-ID"
+        recognitionRef.current.maxAlternatives = 1
+
+        recognitionRef.current.onstart = () => {
+          setIsListening(true)
+          setVoiceError(null)
+
+          // Set timeout for listening (10 seconds)
+          const timeout = setTimeout(() => {
+            if (recognitionRef.current) {
+              recognitionRef.current.stop()
+            }
+          }, 10000)
+          setListeningTimeout(timeout)
+        }
+
+        recognitionRef.current.onresult = (event: any) => {
+          if (event.results && event.results.length > 0) {
+            const transcript = event.results[0][0].transcript
+            if (transcript.trim()) {
+              setInputMessage(transcript)
+              setVoiceError(null)
+            }
+          }
+          setIsListening(false)
+          if (listeningTimeout) {
+            clearTimeout(listeningTimeout)
+            setListeningTimeout(null)
+          }
+        }
+
+        recognitionRef.current.onerror = (event: any) => {
+          console.error("Speech recognition error:", event.error)
+          setIsListening(false)
+
+          if (listeningTimeout) {
+            clearTimeout(listeningTimeout)
+            setListeningTimeout(null)
+          }
+
+          // Handle different error types
+          switch (event.error) {
+            case "no-speech":
+              setVoiceError("Tidak ada suara yang terdeteksi. Coba lagi.")
+              break
+            case "audio-capture":
+              setVoiceError("Mikrofon tidak dapat diakses. Periksa izin mikrofon.")
+              break
+            case "not-allowed":
+              setVoiceError("Akses mikrofon ditolak. Izinkan akses mikrofon di browser.")
+              break
+            case "network":
+              setVoiceError("Koneksi internet bermasalah. Coba lagi.")
+              break
+            case "aborted":
+              setVoiceError("Pengenalan suara dibatalkan.")
+              break
+            default:
+              setVoiceError("Terjadi kesalahan pada pengenalan suara. Coba lagi.")
+          }
+
+          // Clear error after 5 seconds
+          setTimeout(() => {
+            setVoiceError(null)
+          }, 5000)
+        }
+
+        recognitionRef.current.onend = () => {
+          setIsListening(false)
+          if (listeningTimeout) {
+            clearTimeout(listeningTimeout)
+            setListeningTimeout(null)
+          }
+        }
+      }
+
+      // Check for speech synthesis support
+      if ("speechSynthesis" in window) {
+        synthRef.current = window.speechSynthesis
+      }
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+      if (synthRef.current) {
+        synthRef.current.cancel()
+      }
+      if (listeningTimeout) {
+        clearTimeout(listeningTimeout)
+      }
+    }
+  }, [listeningTimeout])
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
@@ -49,6 +180,87 @@ export default function ChatBot({ isOpen, onClose }: ChatBotProps) {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Speech-to-text function
+  const startListening = async () => {
+    if (!recognitionRef.current || !speechSupported) return
+
+    try {
+      // Request microphone permission first
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        await navigator.mediaDevices.getUserMedia({ audio: true })
+      }
+
+      // Stop any ongoing recognition
+      if (isListening) {
+        recognitionRef.current.stop()
+        return
+      }
+
+      setVoiceError(null)
+      recognitionRef.current.start()
+    } catch (error) {
+      console.error("Error accessing microphone:", error)
+      setVoiceError("Tidak dapat mengakses mikrofon. Periksa izin browser.")
+      setTimeout(() => setVoiceError(null), 5000)
+    }
+  }
+
+  const stopListening = () => {
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop()
+    }
+    if (listeningTimeout) {
+      clearTimeout(listeningTimeout)
+      setListeningTimeout(null)
+    }
+  }
+
+  // Text-to-speech function
+  const speakText = (text: string) => {
+    if (synthRef.current && voiceEnabled) {
+      // Cancel any ongoing speech
+      synthRef.current.cancel()
+
+      // Clean text for better speech
+      const cleanText = text
+        .replace(/\*\*(.*?)\*\*/g, "$1") // Remove bold markdown
+        .replace(/🥘|🌱|💡|📦|🥬|🍎|🍚|📝|🔄|♻️|❌|🍳/g, "") // Remove emojis
+        .replace(/\n/g, ". ") // Replace newlines with periods
+        .replace(/\s+/g, " ") // Replace multiple spaces with single space
+        .trim()
+
+      if (!cleanText) return
+
+      const utterance = new SpeechSynthesisUtterance(cleanText)
+      utterance.lang = "id-ID"
+      utterance.rate = 0.9
+      utterance.pitch = 1
+      utterance.volume = 0.8
+
+      utterance.onstart = () => {
+        setIsSpeaking(true)
+      }
+
+      utterance.onend = () => {
+        setIsSpeaking(false)
+      }
+
+      utterance.onerror = (event) => {
+        console.error("Speech synthesis error:", event)
+        setIsSpeaking(false)
+      }
+
+      synthRef.current.speak(utterance)
+    }
+  }
+
+  const stopSpeaking = () => {
+    if (synthRef.current) {
+      synthRef.current.cancel()
+      setIsSpeaking(false)
+    }
+  }
 
   const generateBotResponse = (userMessage: string): { text: string; showTopicButtons?: boolean } => {
     const lowerMessage = userMessage.toLowerCase()
@@ -180,6 +392,13 @@ Silakan pilih topik yang ingin dibahas atau tanyakan hal spesifik!`,
       setMessages((prev) => [...prev, botResponse])
       setShowTopicButtons(response.showTopicButtons ? botResponse.id : null)
       setIsTyping(false)
+
+      // Auto-speak bot response if voice is enabled
+      if (voiceEnabled) {
+        setTimeout(() => {
+          speakText(response.text)
+        }, 500)
+      }
     }, 1500)
   }
 
@@ -245,9 +464,24 @@ Silakan pilih topik yang ingin dibahas atau tanyakan hal spesifik!`,
                     <p className="text-green-100 text-sm">Chatbot Limbah Dapur</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={onClose} className="text-white hover:bg-green-500 p-2">
-                  <X className="w-5 h-5" />
-                </Button>
+                <div className="flex items-center space-x-2">
+                  {/* Voice Toggle */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setVoiceEnabled(!voiceEnabled)
+                      if (isSpeaking) stopSpeaking()
+                    }}
+                    className="text-white hover:bg-green-500 p-2"
+                    title={voiceEnabled ? "Matikan suara" : "Nyalakan suara"}
+                  >
+                    {voiceEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={onClose} className="text-white hover:bg-green-500 p-2">
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
               </div>
 
               {/* Quick Actions */}
@@ -267,6 +501,16 @@ Silakan pilih topik yang ingin dibahas atau tanyakan hal spesifik!`,
                   ))}
                 </div>
               </div>
+
+              {/* Voice Error Display */}
+              {voiceError && (
+                <div className="p-3 bg-red-50 border-b border-red-200">
+                  <div className="flex items-center space-x-2 text-red-700">
+                    <AlertCircle className="w-4 h-4" />
+                    <span className="text-sm">{voiceError}</span>
+                  </div>
+                </div>
+              )}
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -297,12 +541,25 @@ Silakan pilih topik yang ingin dibahas atau tanyakan hal spesifik!`,
                         }`}
                       >
                         <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.text}</p>
-                        <p className={`text-xs mt-1 ${message.sender === "user" ? "text-green-100" : "text-gray-500"}`}>
-                          {message.timestamp.toLocaleTimeString("id-ID", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className={`text-xs ${message.sender === "user" ? "text-green-100" : "text-gray-500"}`}>
+                            {message.timestamp.toLocaleTimeString("id-ID", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                          {message.sender === "bot" && voiceEnabled && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => speakText(message.text)}
+                              className="p-1 h-auto hover:bg-gray-200"
+                              title="Dengarkan pesan"
+                            >
+                              <Volume2 className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -367,6 +624,32 @@ Silakan pilih topik yang ingin dibahas atau tanyakan hal spesifik!`,
                   </motion.div>
                 )}
 
+                {/* Speaking Indicator */}
+                {isSpeaking && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex justify-start"
+                  >
+                    <div className="flex items-start space-x-2">
+                      <div className="p-2 rounded-full bg-green-200 text-green-600">
+                        <Volume2 className="w-4 h-4" />
+                      </div>
+                      <div className="bg-green-50 p-3 rounded-2xl rounded-bl-md border border-green-200">
+                        <p className="text-sm text-green-700">🔊 Sedang berbicara...</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={stopSpeaking}
+                          className="text-xs mt-1 p-1 h-auto text-green-600 hover:bg-green-100"
+                        >
+                          Hentikan
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
                 <div ref={messagesEndRef} />
               </div>
 
@@ -377,10 +660,25 @@ Silakan pilih topik yang ingin dibahas atau tanyakan hal spesifik!`,
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Ketik pesan Anda..."
+                    placeholder={isListening ? "Mendengarkan..." : "Ketik pesan atau gunakan suara..."}
                     className="flex-1 rounded-full border-gray-300 focus:border-green-500 focus:ring-green-500"
-                    disabled={isTyping}
+                    disabled={isTyping || isListening}
                   />
+
+                  {/* Voice Input Button */}
+                  {speechSupported && (
+                    <Button
+                      onClick={startListening}
+                      disabled={isTyping}
+                      className={`rounded-full p-3 ${
+                        isListening ? "bg-red-600 hover:bg-red-700 animate-pulse" : "bg-blue-600 hover:bg-blue-700"
+                      } text-white`}
+                      title={isListening ? "Sedang mendengarkan..." : "Mulai rekaman suara"}
+                    >
+                      {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    </Button>
+                  )}
+
                   <Button
                     onClick={handleSendMessage}
                     disabled={!inputMessage.trim() || isTyping}
@@ -388,6 +686,20 @@ Silakan pilih topik yang ingin dibahas atau tanyakan hal spesifik!`,
                   >
                     <Send className="w-4 h-4" />
                   </Button>
+                </div>
+
+                {/* Voice Status */}
+                <div className="mt-2 text-xs text-center">
+                  {isListening && (
+                    <div className="text-blue-600 flex items-center justify-center space-x-1">
+                      <Mic className="w-3 h-3" />
+                      <span>🎤 Mendengarkan... Silakan berbicara (10 detik)</span>
+                    </div>
+                  )}
+                  {!speechSupported && <div className="text-gray-500">Voice chat tidak didukung di browser ini</div>}
+                  {speechSupported && !isListening && (
+                    <div className="text-gray-500">Klik mikrofon untuk menggunakan voice input</div>
+                  )}
                 </div>
               </div>
             </Card>
