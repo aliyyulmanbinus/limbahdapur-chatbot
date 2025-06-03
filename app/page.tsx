@@ -101,7 +101,7 @@ Tips: Simpan sisa masakan dalam wadah kedap udara di kulkas untuk dikonsumsi kee
                   className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-medium"
                 >
                   <Leaf className="w-4 h-4 mr-2" />
-                  Zero Waste Kitchen
+                  Chatbot Limbah Dapur
                 </motion.div>
 
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
@@ -160,7 +160,7 @@ Tips: Simpan sisa masakan dalam wadah kedap udara di kulkas untuk dikonsumsi kee
               <div className="relative z-10 bg-white rounded-3xl shadow-2xl p-8">
                 <img
                   src="/placeholder.svg?height=400&width=500"
-                  alt="Zero Waste Kitchen Illustration"
+                  alt="Chatbot Limbah Dapur Illustration"
                   className="w-full h-auto rounded-2xl"
                 />
               </div>
@@ -335,7 +335,7 @@ Tips: Simpan sisa masakan dalam wadah kedap udara di kulkas untuk dikonsumsi kee
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <Leaf className="w-8 h-8 text-green-500" />
-                <span className="text-xl font-bold">Zero Waste Kitchen</span>
+                <span className="text-xl font-bold">Chatbot Limbah Dapur</span>
               </div>
               <p className="text-gray-400">
                 Platform edukasi untuk mengelola limbah dapur dengan cerdas dan berkelanjutan.
@@ -373,7 +373,7 @@ Tips: Simpan sisa masakan dalam wadah kedap udara di kulkas untuk dikonsumsi kee
           </div>
 
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Zero Waste Kitchen. Semua hak dilindungi.</p>
+            <p>&copy; 2024 Chatbot Limbah Dapur. Semua hak dilindungi.</p>
           </div>
         </div>
       </footer>

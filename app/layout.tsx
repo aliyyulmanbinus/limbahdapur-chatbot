@@ -6,25 +6,25 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Zero Waste Kitchen - Kelola Limbah Dapur dengan Cerdas",
+  title: "Chatbot Limbah Dapur - Kelola Limbah Dapur dengan Cerdas",
   description:
     "Platform edukasi untuk mengurangi limbah dapur, membuat resep dari bahan sisa, dan tips komposting. Bergabunglah dengan gerakan zero waste untuk masa depan yang berkelanjutan.",
   keywords: "zero waste, limbah dapur, food waste, komposting, resep sisa makanan, daur ulang, berkelanjutan",
-  authors: [{ name: "Zero Waste Kitchen Team" }],
-  creator: "Zero Waste Kitchen",
-  publisher: "Zero Waste Kitchen",
+  authors: [{ name: "Chatbot Limbah Dapur Team" }],
+  creator: "Chatbot Limbah Dapur",
+  publisher: "Chatbot Limbah Dapur",
   robots: "index, follow",
   openGraph: {
-    title: "Zero Waste Kitchen - Kelola Limbah Dapur dengan Cerdas",
+    title: "Chatbot Limbah Dapur - Kelola Limbah Dapur dengan Cerdas",
     description: "Platform edukasi untuk mengurangi limbah dapur dan menciptakan gaya hidup berkelanjutan",
     url: "https://zerowastekitchen.com",
-    siteName: "Zero Waste Kitchen",
+    siteName: "Chatbot Limbah Dapur",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Zero Waste Kitchen - Sustainable Food Management",
+        alt: "Chatbot Limbah Dapur - Sustainable Food Management",
       },
     ],
     locale: "id_ID",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Zero Waste Kitchen - Kelola Limbah Dapur dengan Cerdas",
+    title: "Chatbot Limbah Dapur - Kelola Limbah Dapur dengan Cerdas",
     description: "Platform edukasi untuk mengurangi limbah dapur dan menciptakan gaya hidup berkelanjutan",
     images: ["/og-image.jpg"],
   },

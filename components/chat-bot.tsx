@@ -25,7 +25,7 @@ export default function ChatBot({ isOpen, onClose }: ChatBotProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "Halo! Saya asisten AI Zero Waste Kitchen. Saya siap membantu Anda mengurangi limbah dapur, memberikan resep dari bahan sisa, dan tips komposting. Ada yang bisa saya bantu?",
+      text: "Halo! Saya asisten AI Chatbot Limbah Dapur. Saya siap membantu Anda mengurangi limbah dapur, memberikan resep dari bahan sisa, dan tips komposting. Ada yang bisa saya bantu?",
       sender: "bot",
       timestamp: new Date(),
     },
@@ -228,7 +228,7 @@ Silakan pilih topik yang ingin dibahas atau tanyakan hal spesifik!`
                   </div>
                   <div>
                     <h3 className="font-semibold">AI Assistant</h3>
-                    <p className="text-green-100 text-sm">Zero Waste Kitchen</p>
+                    <p className="text-green-100 text-sm">Chatbot Limbah Dapur</p>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" onClick={onClose} className="text-white hover:bg-green-500 p-2">
