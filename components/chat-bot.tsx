@@ -33,6 +33,7 @@ export default function ChatBot({ isOpen, onClose }: ChatBotProps) {
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [showTopicButtons, setShowTopicButtons] = useState<string | null>(null)
 
   const quickActions = [
     { icon: <ChefHat className="w-4 h-4" />, text: "Resep dari sisa makanan", action: "recipe" },
@@ -49,11 +50,12 @@ export default function ChatBot({ isOpen, onClose }: ChatBotProps) {
     scrollToBottom()
   }, [messages])
 
-  const generateBotResponse = (userMessage: string): string => {
+  const generateBotResponse = (userMessage: string): { text: string; showTopicButtons?: boolean } => {
     const lowerMessage = userMessage.toLowerCase()
 
     if (lowerMessage.includes("resep") || lowerMessage.includes("masak")) {
-      return `Tentu! Untuk membuat resep dari bahan sisa, coba ini:
+      return {
+        text: `Tentu! Untuk membuat resep dari bahan sisa, coba ini:
 
 🥘 **Tumis Sisa Sayuran:**
 - Panaskan minyak, tumis bawang putih
@@ -63,11 +65,13 @@ export default function ChatBot({ isOpen, onClose }: ChatBotProps) {
 
 💡 **Tips:** Simpan sisa sayuran dalam freezer untuk stok tumisan minggu depan!
 
-Ada bahan sisa spesifik yang ingin dijadikan resep?`
+Ada bahan sisa spesifik yang ingin dijadikan resep?`,
+      }
     }
 
     if (lowerMessage.includes("kompos") || lowerMessage.includes("pupuk")) {
-      return `Komposting di rumah sangat mudah! Berikut panduannya:
+      return {
+        text: `Komposting di rumah sangat mudah! Berikut panduannya:
 
 🌱 **Bahan yang Bisa Dikompos:**
 - Sisa sayuran dan buah
@@ -86,11 +90,13 @@ Ada bahan sisa spesifik yang ingin dijadikan resep?`
 3. Aduk seminggu sekali
 4. Dalam 2-3 bulan jadi kompos!
 
-Butuh tips lebih detail?`
+Butuh tips lebih detail?`,
+      }
     }
 
     if (lowerMessage.includes("simpan") || lowerMessage.includes("awet")) {
-      return `Tips penyimpanan makanan agar tahan lama:
+      return {
+        text: `Tips penyimpanan makanan agar tahan lama:
 
 🥬 **Sayuran:**
 - Cuci bersih, keringkan, simpan di kulkas
@@ -107,11 +113,13 @@ Butuh tips lebih detail?`
 - Gunakan wadah kedap udara
 - Konsumsi dalam 2-3 hari
 
-Ada jenis makanan spesifik yang ingin ditanyakan?`
+Ada jenis makanan spesifik yang ingin ditanyakan?`,
+      }
     }
 
     if (lowerMessage.includes("limbah") || lowerMessage.includes("kurangi")) {
-      return `Strategi mengurangi limbah dapur:
+      return {
+        text: `Strategi mengurangi limbah dapur:
 
 📝 **Perencanaan:**
 - Buat menu mingguan
@@ -128,17 +136,21 @@ Ada jenis makanan spesifik yang ingin ditanyakan?`
 - Botol kaca untuk bumbu
 - Kompos dari sisa organik
 
-Mau tips spesifik untuk jenis limbah tertentu?`
+Mau tips spesifik untuk jenis limbah tertentu?`,
+      }
     }
 
-    return `Terima kasih atas pertanyaannya! Saya bisa membantu dengan:
+    return {
+      text: `Terima kasih atas pertanyaannya! Saya bisa membantu dengan:
 
 🍳 **Resep dari bahan sisa** - Ubah sisa makanan jadi hidangan lezat
 🌱 **Tips komposting** - Buat pupuk dari limbah organik  
 💡 **Cara mengurangi limbah** - Strategi zero waste praktis
 📦 **Penyimpanan makanan** - Agar makanan tahan lebih lama
 
-Silakan pilih topik yang ingin dibahas atau tanyakan hal spesifik!`
+Silakan pilih topik yang ingin dibahas atau tanyakan hal spesifik!`,
+      showTopicButtons: true,
+    }
   }
 
   const handleSendMessage = async () => {
@@ -157,14 +169,16 @@ Silakan pilih topik yang ingin dibahas atau tanyakan hal spesifik!`
 
     // Simulate AI response delay
     setTimeout(() => {
+      const response = generateBotResponse(inputMessage)
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: generateBotResponse(inputMessage),
+        text: response.text,
         sender: "bot",
         timestamp: new Date(),
       }
 
       setMessages((prev) => [...prev, botResponse])
+      setShowTopicButtons(response.showTopicButtons ? botResponse.id : null)
       setIsTyping(false)
     }, 1500)
   }
@@ -199,7 +213,7 @@ Silakan pilih topik yang ingin dibahas atau tanyakan hal spesifik!`
             className="fixed bottom-6 right-6 z-50"
           >
             <Button
-              onClick={() => onClose(true)}
+              onClick={() => onClose()}
               className="bg-green-600 hover:bg-green-700 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300"
               size="lg"
             >
@@ -293,6 +307,37 @@ Silakan pilih topik yang ingin dibahas atau tanyakan hal spesifik!`
                     </div>
                   </motion.div>
                 ))}
+
+                {showTopicButtons && messages[messages.length - 1]?.id === showTopicButtons && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex justify-start mb-4"
+                  >
+                    <div className="flex items-start space-x-2 max-w-[90%]">
+                      <div className="p-2 rounded-full bg-gray-200 text-gray-600">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                      <div className="flex flex-col w-full gap-2">
+                        {quickActions.map((action, index) => (
+                          <Button
+                            key={index}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              handleQuickAction(action.action)
+                              setShowTopicButtons(null)
+                            }}
+                            className="text-xs p-2 h-auto w-full flex items-center justify-start space-x-2 hover:bg-green-50 hover:border-green-300"
+                          >
+                            {action.icon}
+                            <span className="text-left">{action.text}</span>
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
 
                 {/* Typing Indicator */}
                 {isTyping && (
