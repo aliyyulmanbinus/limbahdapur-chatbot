@@ -365,9 +365,9 @@ Tips: Simpan sisa masakan dalam wadah kedap udara di kulkas untuk dikonsumsi kee
             <div>
               <h3 className="font-semibold mb-4">Kontak</h3>
               <ul className="space-y-2 text-gray-400">
-                <li>hello@zerowastekitchen.com</li>
-                <li>+62 812-3456-7890</li>
-                <li>Jakarta, Indonesia</li>
+                <li>hello@gmail.com</li>
+                <li>+62 812-xxxx-xxxx</li>
+                <li>Bandung, Indonesia</li>
               </ul>
             </div>
           </div>
